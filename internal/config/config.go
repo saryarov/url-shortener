@@ -2,31 +2,32 @@
 package config
 
 import (
-    "fmt"
-    "net/url"
-    "os"
-    "strconv"
+	"fmt"
+	"net/url"
+	"os"
+	"strconv"
 )
 
 // TODO: разобрать переменные окружения из задания (шаг «Конфигурация»),
 // проверить значения и вернуть ошибку, если они бессмысленны.
 // Сервис с некорректной конфигурацией стартовать не должен.
-type Config struct{
-	HTTPAddr string
-	BASE_URL string
+type Config struct {
+	HTTPAddr    string
+	BASE_URL    string
 	CODE_LENGTH int
-	LOG_LEVEL string
+	LOG_LEVEL   string
 }
 
 const Defadr = ":8080"
 const baseUrl = "http://localhost:8080"
 const Deflen = 7
 const baseLog = "info"
-var allowedLogLevels = map[string]bool {
-	"info" : true,
+
+var allowedLogLevels = map[string]bool{
+	"info":  true,
 	"debug": true,
-	"warn" : true,
-	"error" : true}
+	"warn":  true,
+	"error": true}
 
 func Load() (Config, error) {
 	var c Config
@@ -48,15 +49,17 @@ func Load() (Config, error) {
 	if !ok {
 		c.BASE_URL = baseUrl
 	} else {
-	u, err := url.Parse(value)
-	if err != nil { return Config{}, fmt.Errorf("url.Parse: error")}
-	if u.Scheme != "http" && u.Scheme != "https" {
-		return Config{}, fmt.Errorf("BASE_URL: not https or http")
-	}
-	if len(u.Host) == 0 {
-		return Config{}, fmt.Errorf("BASE_URL: need host")
-	}
-	c.BASE_URL = value
+		u, err := url.Parse(value)
+		if err != nil {
+			return Config{}, fmt.Errorf("url.Parse: error")
+		}
+		if u.Scheme != "http" && u.Scheme != "https" {
+			return Config{}, fmt.Errorf("BASE_URL: not https or http")
+		}
+		if len(u.Host) == 0 {
+			return Config{}, fmt.Errorf("BASE_URL: need host")
+		}
+		c.BASE_URL = value
 	}
 
 	//====================================
@@ -66,7 +69,9 @@ func Load() (Config, error) {
 		c.CODE_LENGTH = Deflen
 	} else {
 		n, err := strconv.Atoi(value)
-		if err != nil { return Config{}, fmt.Errorf("strconv.Atoi: error")}
+		if err != nil {
+			return Config{}, fmt.Errorf("strconv.Atoi: error")
+		}
 		if n < 1 {
 			return Config{}, fmt.Errorf("CODE_LENGTH: len < 1")
 		} else {
