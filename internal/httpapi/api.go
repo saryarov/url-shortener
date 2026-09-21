@@ -12,6 +12,7 @@ import (
 	"net/http"
 	"net/url"
 	"strings"
+	"time"
 	"urlshortener/internal/config"
 	"urlshortener/internal/storage"
 )
@@ -122,4 +123,38 @@ func (h *Handler) redirect(w http.ResponseWriter, r *http.Request) {
 	}
 	http.Redirect(w, r, target, http.StatusFound)
 
+}
+
+type statusRecorder struct {
+	http.ResponseWriter
+	status int
+}
+
+func (r *statusRecorder) WriteHeader(code int) {
+	r.status = code
+	r.ResponseWriter.WriteHeader(code)
+}
+
+func (r *statusRecorder) Write(b []byte) (int, error) {
+	if r.status == 0 {
+		r.status = 200
+	}
+	return r.ResponseWriter.Write(b)
+}
+
+func (h *Handler) loggingMiddleWare(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		start := time.Now()
+		rec := &statusRecorder{ResponseWriter: w, status: 200}
+		next.ServeHTTP(rec, r)
+		h.log.Info("request", "method", r.Method, "path", r.URL.Path, "status", rec.status, "duration_ms", time.Since(start).Milliseconds())
+	})
+}
+
+func New(store storage.Storage, cfg config.Config, logger *slog.Logger) http.Handler {
+	h := &Handler{storage: store, cfg: cfg, log: logger}
+	mux := http.NewServeMux()
+	mux.HandleFunc("POST /links", h.createLink)
+	mux.HandleFunc("GET /r/{code}", h.redirect)
+	return h.loggingMiddleWare(mux)
 }
