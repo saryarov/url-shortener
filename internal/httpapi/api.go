@@ -112,3 +112,14 @@ func (h *Handler) createLink(w http.ResponseWriter, r *http.Request) {
 	short := buildShortUrl(h.cfg.BASE_URL, savedCode)
 	writeJSON(w, 201, createLinkResponse{Code: savedCode, ShortURL: short})
 }
+
+func (h *Handler) redirect(w http.ResponseWriter, r *http.Request) {
+	code := r.PathValue("code")
+	target, ok := h.storage.Lookup(code)
+	if !ok {
+		writeError(w, http.StatusNotFound, "error")
+		return
+	}
+	http.Redirect(w, r, target, http.StatusFound)
+
+}
